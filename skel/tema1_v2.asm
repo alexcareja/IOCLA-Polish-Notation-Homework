@@ -19,6 +19,7 @@ atoi:
     
 while:
     movzx esi, byte [edi]
+    ;test esi, esi
     cmp esi, 0x00000000
     je finished_string
     
@@ -90,41 +91,51 @@ return_is_op:
     ret
 
 
-solve:  ;result stored in eax
+solve:
     push ebp
     mov ebp, esp
     mov ebx, [ebp + 8]
     ;mov eax, [ebx]     ;asa se afiseaza
     ;PRINT_STRING [eax] ;operatia +-*/
-    mov eax, [ebx]  ;Data
+    mov eax, [ebx + 32] ;left
     push eax
     call is_operation
-    cmp edx, 1
-    je calc_result  ;Daca e numar il returnez
-    mov eax, [ebx]  ;Data
+    cmp edx, 0
+    je calc_right   ;in nodul din stanga este deja un nr
+    ;TODO call operatie stanga + modific nod
+    ;push ebx
+    ;push [ebx + 32]
+    ;call solve
+    ;pop ebx
+    ;pop ebx
+    
+calc_right:
+    mov eax, [ebx + 64] ;right
     push eax
-    call atoi
-    jmp end_solve
+    call is_operation
+    cmp edx, 0
+    je calc_result
+    ;TODO call operatie dreapta + modific nod
     
 calc_result:
-    ;get left result
-    mov eax, [ebx + 4]
-    push ebx    ;current node address
-    push eax    ;left node address
-    call solve
-    pop ebx
-    pop ebx
-    
-    ;get right result
-    push eax    ;left node value
-    mov eax, [ebx + 8]
-    push ebx    ;current node address
-    push eax    ;right node address
-    call solve
-    pop ebx
-    pop ebx
+    ;parse left
+    mov eax, [ebx + 32]
+    push eax
+    call atoi
+    mov edx, eax
+    ;parse right
+    mov eax, [ebx + 64]
+    push edx
+    push eax
+    ;PRINT_DEC 4, edx
+    call atoi
+    pop edx
     pop edx
     xchg eax, edx
+    ;PRINT_DEC 4, eax - nr din stanga
+    ;NEWLINE
+    ;PRINT_DEC 4, edx - nr din dreapta
+    ;NEWLINE
     
     ;discover operation
     mov edi, [ebx]
@@ -140,20 +151,19 @@ calc_result:
 
 multiplication:
     imul edx
-    jmp end_solve
+    jmp end_fn
 addition:
     add eax, edx
-    jmp end_solve
+    jmp end_fn
 subtraction:
     sub eax, edx
-    jmp end_solve
+    jmp end_fn
 division:
     mov ecx, edx    ;avoid floating
     mov edx, 0      ;point exception
-    cdq				;sign extension for edx:eax
     idiv ecx
     
-end_solve:  
+end_fn:  
     leave
     ret
 
