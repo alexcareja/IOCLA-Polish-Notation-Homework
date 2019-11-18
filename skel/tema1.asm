@@ -14,12 +14,11 @@ atoi:
     push ebp
     mov ebp, esp
     mov edi, [ebp + 8]
-    mov ebx, 0 ;ebx = 0 -> pozitiv; ebx = 1 -> negativ
+    mov ecx, 0 ;ecx = 0 -> pozitiv; ecx = 1 -> negativ
     mov eax, 0
     
 while:
     movzx esi, byte [edi]
-    ;test esi, esi
     cmp esi, 0x00000000
     je finished_string
     
@@ -41,7 +40,7 @@ while:
     jmp while
     
 negative:
-    mov ebx, 1
+    mov ecx, 1
     inc edi
     jmp while    
  
@@ -49,7 +48,7 @@ error:
     mov eax, 0
     
 finished_string:
-    cmp ebx, 0
+    cmp ecx, 0
     je return_atoi
     mov edx, -1
     imul edx
@@ -91,67 +90,75 @@ return_is_op:
     ret
 
 
-solve:
+solve:  ;result stored in eax
     push ebp
     mov ebp, esp
     mov ebx, [ebp + 8]
     ;mov eax, [ebx]     ;asa se afiseaza
     ;PRINT_STRING [eax] ;operatia +-*/
-    mov eax, [ebx + 32] ;left
+    mov eax, [ebx]  ;Data
     push eax
     call is_operation
-    cmp edx, 0
-    je calc_right   ;in nodul din stanga este deja un nr
-    ;TODO call operatie stanga + modific nod
-    
-calc_right:
-    mov eax, [ebx + 64] ;right
+    cmp edx, 1
+    je calc_result  ;Daca e numar il returnez
+    mov eax, [ebx]  ;Data
     push eax
-    call is_operation
-    cmp edx, 0
-    je calc_result
-    ;TODO call operatie dreapta + modific nod
+    call atoi
+    jmp end_solve
     
 calc_result:
-    ;parse left
-    mov eax, [ebx + 32]
-    push eax
-    call atoi
-    mov edx, eax
-    ;parse right
-    mov eax, [ebx + 64]
-    push eax
-    call atoi
+    ;get left result
+    mov eax, [ebx + 4]
+    push ebx    ;current node address
+    push eax    ;left node address
+    call solve
+    pop ebx
+    pop ebx
+    
+    ;get right result
+    push eax    ;left node value
+    mov eax, [ebx + 8]
+    push ebx    ;current node address
+    push eax    ;right node address
+    call solve
+    pop ebx
+    pop ebx
+    pop edx
+    xchg eax, edx
+    
     ;discover operation
-    movzx esi, byte [ebx]
-    cmp esi, 42 ;'*'
-    je multiplication
+    mov edi, [ebx]
+    movzx esi, byte [edi]
     cmp esi, 43 ;'+'
-    je addition
+    jz addition
+    cmp esi, 42 ;'*'
+    jz multiplication
     cmp esi, 45 ;'-'
-    je subtraction
+    jz subtraction
     cmp esi, 47 ;'/'
-    je division
+    jz division
 
 multiplication:
     imul edx
-    jmp end_fn
+    jmp end_solve
 addition:
     add eax, edx
-    jmp end_fn
+    jmp end_solve
 subtraction:
     sub eax, edx
-    jmp end_fn
+    jmp end_solve
 division:
-    idiv edx
+    mov ecx, edx    ;avoid floating
+    mov edx, 0      ;point exception
+    cdq
+    idiv ecx
     
-end_fn:
-    PRINT_DEC 4, eax
-    
+end_solve:  
     leave
     ret
 
 main:
+    mov ebp, esp; for correct debugging
     ; NU MODIFICATI
     push ebp
     mov ebp, esp
@@ -171,6 +178,7 @@ main:
     ;PRINT_DEC 4, eax
     push eax
     call solve
+    PRINT_DEC 4, eax
     
     ; NU MODIFICATI
     ; Se elibereaza memoria alocata pentru arbore
