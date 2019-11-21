@@ -10,7 +10,7 @@ section .bss
 section .text
 global main
 
-atoi:
+atoi:   ;return in eax numar intreg
     push ebp
     mov ebp, esp
     mov edi, [ebp + 8]
@@ -18,7 +18,7 @@ atoi:
     mov eax, 0
     
 while:
-    movzx esi, byte [edi]
+    movzx esi, byte [edi]   ;zero extension
     cmp esi, 0x00000000
     je finished_string
     
@@ -58,11 +58,11 @@ return_atoi:
     ret
 
 
-is_operation:
+is_operation:   ;return in edx 1 if operation, 0 else
     push ebp
     mov ebp, esp
     mov edi, [ebp + 8]
-    mov edx, 0 ; edx = 0 -> not operation; eax = 1 -> operation
+    mov edx, 0 ; edx = 0 -> not operation; edx = 1 -> operation
     movzx esi, byte [edi]
     
     cmp esi, 42 ;'*'
@@ -90,18 +90,16 @@ return_is_op:
     ret
 
 
-solve:  ;result stored in eax
+solve:  ;return result in eax
     push ebp
     mov ebp, esp
     mov ebx, [ebp + 8]
-    ;mov eax, [ebx]     ;asa se afiseaza
-    ;PRINT_STRING [eax] ;operatia +-*/
-    mov eax, [ebx]  ;Data
+    mov eax, [ebx]  ;*data
     push eax
     call is_operation
     cmp edx, 1
     je calc_result  ;Daca e numar il returnez
-    mov eax, [ebx]  ;Data
+    mov eax, [ebx]  ;*data
     push eax
     call atoi
     jmp end_solve
@@ -141,21 +139,25 @@ calc_result:
 multiplication:
     imul edx
     jmp end_solve
+    
 addition:
     add eax, edx
     jmp end_solve
+    
 subtraction:
     sub eax, edx
     jmp end_solve
+    
 division:
-    mov ecx, edx    ;avoid floating
-    mov edx, 0      ;point exception
-    cdq				;sign extension for edx:eax
+    mov ecx, edx
+    mov edx, 0
+    cdq ;sign extension for edx:eax
     idiv ecx
     
 end_solve:  
     leave
     ret
+
 
 main:
     mov ebp, esp; for correct debugging
@@ -169,13 +171,6 @@ main:
     
     ; Implementati rezolvarea aici:
     mov eax, [root]
-    ;mov ebx, [eax]
-    ;PRINT_STRING [ebx]
-    ;mov ebx, [eax + 32]
-    ;PRINT_STRING [ebx]
-    ;push ebx
-    ;call atoi
-    ;PRINT_DEC 4, eax
     push eax
     call solve
     PRINT_DEC 4, eax
